@@ -25,12 +25,18 @@ Route::group(['middleware' => ['api']], function () {
         //用户模块
         Route::post('/join', ['uses' => 'Student\UserController@student_join']);
         Route::post('/login', ['uses' => 'Student\UserController@student_login']);
+        Route::post('/QE',['uses'=>'Student\UserController@QE']);
         //课程模块
         Route::post('/join_course', ['uses' => 'Student\CourseController@join_course']);
         Route::post('/get_joined_course_list', ['uses' => 'Student\CourseController@get_joined_course_list']);
         Route::post('/get_course_info_by_id', ['uses' => 'Student\CourseController@get_course_info_by_id']);
         Route::post('/get_class_by_course', ['uses' => 'Student\CourseController@get_class_by_course']);
         Route::post('/get_all_joinable_course', ['uses' => 'Student\CourseController@get_all_joinable_course']);
+        Route::post('/get_communicatemsg',['uses' => 'Student\CourseController@get_communicatemsg']);
+        Route::post('/post_communicate',['uses'=>'Student\CourseController@post_communicate']);
+        Route::post('/get_gs_communicate',['uses' => 'Student\CourseController@get_gs_communicate']);
+        Route::post('/get_st_communicate',['uses' => 'Student\CourseController@get_st_communicate']);
+        Route::post('/get_cs_communicate',['uses' => 'Student\CourseController@get_cs_communicate']);
         //作业模块
         Route::post('/submit_homework', ['uses' => 'Student\HomeworkController@submit_homework']);
         Route::post('/get_four_homework', ['uses' => 'Student\HomeworkController@get_four_homework']);
@@ -56,12 +62,24 @@ Route::group(['middleware' => ['api']], function () {
         Route::post('/add_course', ['uses' => 'Teacher\CourseController@add_course']);
         Route::post('/get_my_course', ['uses' => 'Teacher\CourseController@get_my_course']);
         Route::post('/get_student_by_course', ['uses' => 'Teacher\CourseController@get_student_by_course']);
-
+        Route::post('/grouping',['uses'=>'Teacher\CourseController@grouping']);
+        Route::post('/get_groupingmsg',['uses'=>'Teacher\CourseController@get_groupingmsg']);
+        Route::post('/adjust_grouping',['uses'=>'Teacher\CourseController@adjust_grouping']);
         //作业模块
         Route::post('/add_homework', ['uses' => 'Teacher\HomeworkController@add_homework']);
         Route::post('/add_new_round_homework', ['uses' => 'Teacher\HomeworkController@add_new_round_homework']);
         Route::post('/get_homework_of_course', ['uses' => 'Teacher\HomeworkController@get_homework_of_course']);
         Route::post('/get_homework_score_percent', ['uses' => 'Teacher\HomeworkController@get_homework_score_percent']);
+        Route::post('/get_submit_homework_student', ['uses' => 'Teacher\HomeworkController@get_submit_homework_student']);
+        Route::post('/get_submit_assessment_student', ['uses' => 'Teacher\HomeworkController@get_submit_assessment_student']);
+        Route::post('/get_student_homework_content', ['uses' => 'Teacher\HomeworkController@get_student_homework_content']);
+        Route::post('/get_student_assessment', ['uses' => 'Teacher\HomeworkController@get_student_assessment']);
+        //反馈模块
+        Route::post('/get_st_communicate',['uses'=>'Teacher\CourseController@get_st_communicate']);
+        Route::post('/get_gt_communicate',['uses'=>'Teacher\CourseController@get_gt_communicate']);
+        Route::post('/get_ct_communicate',['uses'=>'Teacher\CourseController@get_ct_communicate']);
+        Route::post('/post_communicate',['uses'=>'Teacher\CourseController@post_communicate']);
+        Route::post('/get_classInfo',['uses'=>'Teacher\CourseController@get_classInfo']);
     });
     //admin接口
     Route::group(['prefix' => 'admin'], function () {
@@ -74,6 +92,13 @@ Route::group(['middleware' => ['api']], function () {
         Route::post('/get_admin_list', ['uses' => 'Admin\UserController@get_admin_list']);
         //课程模块
         Route::post('/get_course_list', ['uses' => 'Admin\CourseController@get_course_list']);
+        Route::post('/adjust_assessmentdemo',['uses'=>'Admin\CourseController@adjust_course_assessmentdemo']);
+        //反馈意见
+        Route::post('/post_feedback',['uses'=>'Admin\FeedbackController@post_feedback']);
+        Route::post('/get_feedback',['uses'=>'Admin\FeedbackController@get_feedback']);
+        //流量
+        Route::post('/get_viewrecord',['uses'=>'Admin\UserController@get_viewrecord']);
+        Route::post('/get_homeworkrecord',['uses'=>'Admin\UserController@get_homeworkrecord']);
     });
 });
 

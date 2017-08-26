@@ -50,6 +50,83 @@ class UserController extends Controller
 
     }
 
+    /**处理问卷
+     * @param Request $request
+     * @return mixed
+     */
+    public function QE(Request $request)
+    {
+        $type = 'S1007';
+        $post = $request->all();
+        login_pretreat($type,$post);
+        $student_id = session('id');
+        $QE_info = DB::table('attribute')->where('id',$student_id)->get();
+        if(!$QE_info) {
+            $style = [];
+            for ($i = 1; $i <= 4; $i++) {
+                $style[$i] = 0;
+            }
+            $style[1] = $post['answer1'] + $post['answer2'] + $post['answer3'] + $post['answer4'] + $post['answer5'];
+            $style[2] = $post['answer6'] + $post['answer7'] + $post['answer8'] + $post['answer9'] + $post['answer10'];
+            $style[3] = $post['answer11'] + $post['answer12'] + $post['answer13'] + $post['answer14'] + $post['answer15'];
+            $style[4] = $post['answer16'] + $post['answer17'] + $post['answer18'] + $post['answer19'] + $post['answer20'];
+            $styleword = [];
+            if ($style[1] > 0) {
+                $styleword[1] = '活跃型';
+            } else {
+                $styleword[1] = '沉思型';
+            }
+
+            if ($style[2] > 0) {
+                $styleword[2] = '感悟型';
+            } else {
+                $styleword[2] = '直觉型';
+            }
+
+            if ($style[3] > 0) {
+                $styleword[3] = '视觉型';
+            } else {
+                $styleword[3] = '言语型';
+            }
+
+            if ($style[4] > 0) {
+                $styleword[4] = '序列型';
+            } else {
+                $styleword[4] = '综合型';
+            }
+
+            $msg = [];
+            $msg['student_id'] = $student_id;
+            $msg['style_count'] = $style;
+            $msg['style_word'] = $styleword;
+            $num = DB::table('attribute')
+                ->where('student_id', $student_id)
+                ->get();
+            $num = count($num);
+            if ($num == 0) {
+                DB::table('attribute')->insert([
+                    'student_id' => $student_id,
+                    'style_1' => $style[1],
+                    'style_2' => $style[2],
+                    'style_3' => $style[3],
+                    'style_4' => $style[4],
+                ]);
+            } else {
+                DB::table('attribute')
+                    ->where('student_id', $student_id)
+                    ->update([
+                        'student_id' => $student_id,
+                        'style_1' => $style[1],
+                        'style_2' => $style[2],
+                        'style_3' => $style[3],
+                        'style_4' => $style[4],
+                    ]);
+            }
+        }
+        return response_treatment(0,$type,$msg);
+
+    }
+
     /**登录
      * @param Request $request
      * @return mixed
@@ -77,6 +154,16 @@ class UserController extends Controller
                 $msg['email'] = $row->email;
                 $res = response_treatment(0, $type, $msg);
                 $res['token'] = $token;
+                //记录登陆情况
+                $time =  date('Y-m-d H:i:s');
+                DB::table('usage')
+                    ->insert([
+                        'user_id'=>$row->id,
+                        'user_name'=>$row->name,
+                        'user_type'=>'学生端',
+                        'email'=>$row->email,
+                        'record'=>$time
+                    ]);
                 return $res;
             } else {
                 return response_treatment(1, $type);

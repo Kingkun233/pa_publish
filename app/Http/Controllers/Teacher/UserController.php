@@ -72,7 +72,18 @@ class UserController extends Controller
                 $msg['email'] = $row->email;
                 $res = response_treatment(0, $type, $msg);
                 $res['token'] = $token;
+                //记录登陆情况
+                $time =  date('Y-m-d H:i:s');
+                DB::table('usage')
+                    ->insert([
+                        'user_id'=>$row->id,
+                        'user_name'=>$row->name,
+                        'user_type'=>'教师端',
+                        'email'=>$row->email,
+                        'record'=>$time
+                    ]);
                 return $res;
+
             } else {
                 return response_treatment(1, $type);
             }

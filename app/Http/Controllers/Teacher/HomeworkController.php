@@ -239,4 +239,134 @@ class HomeworkController extends Controller
     {
         return DB::table('student_homework')->where('homework_id', $homework_id)->get()->toArray();
     }
+
+    /**获取提交了该作业的学生
+     * @param Request $request
+     */
+    public function get_submit_homework_student(Request $request)
+    {
+        $type = 'T3005';
+        $post = $request->all();
+        login_pretreat($type, $post);
+        $homework_id = $post['homework_id'];
+        //获取该作业对应班级的所有学生
+        $class_id = DB::table('homeworks')->where('id', $homework_id)->value('class_id');
+        $students = DB::table('student_course')->where('class_id', $class_id)->get()->toArray();
+        $student_ids = [];
+        $student_ids = $this->get_object_value_as_array($students, 'student_id');
+        //整合学生信息
+        $submit_infos = [];
+        foreach ($student_ids as $k => $student_id) {
+            $student_info = DB::table('students')->where('id', $student_id)->first();
+//            var_dump($student_info);die;
+            $is_submit = DB::table('student_homework')->where(['student_id' => $student_id, 'homework_id' => $homework_id])->first();
+            $submit_info['student_id'] = $student_id;
+            if ($is_submit) {
+                $submit_info['is_submit'] = 1;
+                $submit_info['creat_time'] = $is_submit->creat_time;
+            } else {
+                $submit_info['is_submit'] = 0;
+                $submit_info['creat_time'] = '';
+            }
+            //整合名字和学号
+            $submit_info['school_num'] = $student_info->school_num;
+            $submit_info['name'] = $student_info->name;
+            $submit_infos[] = $submit_info;
+        }
+        return response_treatment(0, $type, $submit_infos);
+    }
+
+    /**获取已经提交评价的学生
+     * @return mixed
+     */
+    public function get_submit_assessment_student(Request $request)
+    {
+        $type = 'T3006';
+        $post = $request->all();
+        login_pretreat($type, $post);
+        $homework_id = $post['homework_id'];
+        //获取该作业对应班级的所有学生
+        $class_id = DB::table('homeworks')->where('id', $homework_id)->value('class_id');
+        $students = DB::table('student_course')->where('class_id', $class_id)->get()->toArray();
+        $student_ids = [];
+        $student_ids = $this->get_object_value_as_array($students, 'student_id');
+        //获取该作业的所有student_homework_id
+        $student_homeworks = $this->get_student_homework_by_homework($homework_id);
+        $student_homework_ids = $this->get_object_value_as_array($student_homeworks, 'id');
+        //整合学生信息
+        $submit_infos = [];
+        foreach ($student_ids as $k => $student_id) {
+            $student_info = DB::table('students')->where('id', $student_id)->first();
+            $is_submit = DB::table('assessment')->where('student_id', $student_id)->whereIn('student_homework_id', $student_homework_ids)->first();
+            $submit_info['student_id'] = $student_id;
+            if ($is_submit) {
+                $submit_info['is_submit'] = 1;
+                $submit_info['create_time'] = $is_submit->time;
+            } else {
+                $submit_info['is_submit'] = 0;
+                $submit_info['create_time'] = '';
+            }
+            //整合名字和学号
+            $submit_info['school_num'] = $student_info->school_num;
+            $submit_info['name'] = $student_info->name;
+            $submit_infos[] = $submit_info;
+        }
+        return response_treatment(0, $type, $submit_infos);
+    }
+
+    /**
+     * 获取学生作业内容
+     */
+    public function get_student_homework_content(Request $request)
+    {
+        $type = 'T3007';
+        $post = $request->all();
+        login_pretreat($type, $post);
+        $homework_id = $post['homework_id'];
+        $student_id = $post['student_id'];
+        $student_homework = DB::table('student_homework')->where(['homework_id' => $homework_id, 'student_id' => $student_id])->first();
+        if ($student_homework) {
+            $student_info = DB::table('students')->where('id', $student_id)->first();
+            $student_homework->name = $student_info->name;
+            $student_homework->school_num = $student_info->school_num;
+        }
+        return response_treatment(0, $type, $student_homework);
+    }
+
+    /**
+     * 获取该学生对别人的评价
+     */
+    public function get_student_assessment(Request $request)
+    {
+        $type = 'T3008';
+        $post = $request->all();
+        login_pretreat($type, $post);
+        $student_id = $post['student_id'];
+        $homework_id = $post['homework_id'];
+        $student_homeworks = $this->get_student_homework_by_homework($homework_id);
+        $student_homework_ids = $this->get_object_value_as_array($student_homeworks, 'id');
+        $assessments = DB::table('assessment')->where('student_id', $student_id)->whereIn('student_homework_id', $student_homework_ids)->get()->toArray();
+        //按照student_homework_id分类
+        $student_homework_ids = $this->get_object_value_as_array($assessments, 'student_homework_id');
+        $student_homework_ids = array_unique($student_homework_ids);
+        $assessment_groupby_student_homework = [];
+        foreach ($student_homework_ids as $student_homework_id) {
+            $assessment_groupby_student_homework[] = ['student_homework_id' => $student_homework_id];
+        }
+        foreach ($assessments as $assessment) {
+            $key = 0;
+            foreach ($assessment_groupby_student_homework as $k => $v) {
+                if ($v['student_homework_id'] == $assessment->student_homework_id) {
+                    $key = $k;
+                }
+            }
+            //整合标准名
+            $assessment->standard_name = DB::table('homework_standard')->where('id', $assessment->standard_id)->value('standard');
+            //整合作者信息
+            $assessment_groupby_student_homework[$key]['author_id'] = DB::table('student_homework')->where('id', $student_homework_id)->value('student_id');
+            $assessment_groupby_student_homework[$key]['author_name'] = DB::table('students')->where('id', $assessment_groupby_student_homework[$key]['author_id'])->value('name');
+            $assessment_groupby_student_homework[$key]['assessments'][] = $assessment;
+        }
+        return response_treatment(0, $type, $assessment_groupby_student_homework);
+    }
 }
