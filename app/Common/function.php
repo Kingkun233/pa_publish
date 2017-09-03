@@ -44,6 +44,9 @@ function login_pretreat($type, $post)
     }
     //判断token是否存在
     $token = $post['token'];
+    if (!$token) {
+        my_redirect('return', 4, $type);
+    }
     $user_info = DB::table('students')->where('token', $token)->select(['id', 'token'])->first();
     if (!$user_info) {
         $user_info = DB::table('teachers')->where('token', $token)->select(['id', 'token'])->first();

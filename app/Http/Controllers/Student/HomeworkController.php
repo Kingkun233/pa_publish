@@ -67,6 +67,8 @@ class HomeworkController extends Controller
             DB::table('student_homework')->where('id', $random_id)->update(['assessing' => 1]);
             $msg[] = $array_homeworks[$random_num];
         }
+        $final['student_homework_id']=DB::table('student_homework')->where(['student_id'=>$student_id,'homework_id'=>$homework_id])->value('id');
+        $final['homework']=$msg;
 
         return response_treatment(0, $type, $msg);
     }
@@ -208,9 +210,12 @@ class HomeworkController extends Controller
         //根据班别获取作业
         $homeworks = DB::table('homeworks')->whereIn('class_id', $class_ids)->orderBy('submit_ddl', 'desc')->get()->toArray();
         //提交人数
+//        var_dump($class_ids2);die;
         foreach ($homeworks as $k => $homework) {
             $submit_num = DB::table('student_homework')->where('homework_id', $homework->id)->count();
-            $homeworks[$k]->submit_num = $submit_num;
+            $homework->submit_num = $submit_num;
+            $homework->class_name = DB::table('classes')->where('id',$homework->class_id)->value('class_name');
+            $homework->course_name = DB::table('courses')->where('id',$homework->course_id)->value('name');
             //我的状态
             if ($homework->state == 1) {
                 //如果是提交,查找student_homework表有没有该学生的作业
@@ -383,13 +388,18 @@ class HomeworkController extends Controller
             ->where('homework_id', $homework_id)
             ->get()
             ->toArray();
+//        var_dump($assigns);die;
         if ($student_homeworks) {
             //assess_assign表assigned字段置一
             DB::table('assess_assign')
                 ->whereIn('student_id', $student_ids)
                 ->where('homework_id', $homework_id)
                 ->update(['assigned' => 1]);
-            return response_treatment(0, $type, $student_homeworks);
+            $student_homework_info=DB::table('student_homework')->where(['student_id'=>$student_id,'homework_id'=>$homework_id])->first();
+            $final['student_homework_id']=$student_homework_info->id;
+            $final['student_homework_content']=$student_homework_info->content;
+            $final['student_homework']=$student_homeworks;
+            return response_treatment(0, $type, $final);
         } else {
             return response_treatment(1, $type);
         }
